@@ -12,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build (default: master)'
+        description: 'Tag to build (leave empty for current branch)'
         required: false
-        default: 'master'
+        default: ''
       machine:
         description: 'Target machine'
         required: false
@@ -24,6 +24,9 @@ on:
           - raspberrypi0-wifi
           - raspberrypi4-64
           - raspberrypi0-2w-64
+
+env:
+  BUILD_TAG: ${{ github.event.inputs.tag || github.ref_name || github.event.repository.default_branch }}
 
 jobs:
   build:
@@ -61,23 +64,23 @@ jobs:
       
       - name: Build PiTrezor image
         run: |
-          TAG=${{ github.event.inputs.tag || 'master' }}
+          TAG="${{ env.BUILD_TAG }}"
           MACHINE=${{ matrix.machine }}
-          IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
+          IMGFILE=/imgs/pitrezor-$MACHINE-$TAG.img
           
-          docker run -t --rm -v $(pwd)/imgs:/imgs:z pitrezor-build /bin/bash -c "\
-          git clone https://github.com/3rdIteration/yocto-pitrezor.git && \
-          cd yocto-pitrezor && \
-          git checkout $TAG && \
-          git submodule update --init --recursive && \
-          sed -i -e 's/^MACHINE.*/MACHINE ??= \"$MACHINE\"/' build/conf/local.conf && \
-          . poky/oe-init-build-env build && \
-          bitbake pitrezor-image && \
-          cp tmp/deploy/images/$MACHINE/pitrezor-image-$MACHINE.rpi-sdimg /$IMGFILE"
+          docker run -t --rm \
+            -v $(pwd):/home/build/yocto-pitrezor:z \
+            -v $(pwd)/imgs:/imgs:z \
+            pitrezor-build /bin/bash -c "\
+            cd /home/build/yocto-pitrezor && \
+            sed -i -e 's/^MACHINE.*/MACHINE ??= \"$MACHINE\"/' build/conf/local.conf && \
+            . poky/oe-init-build-env build && \
+            bitbake pitrezor-image && \
+            cp tmp/deploy/images/$MACHINE/pitrezor-image-$MACHINE.rpi-sdimg $IMGFILE"
       
       - name: Create zip archive
         run: |
-          TAG=${{ github.event.inputs.tag || 'master' }}
+          TAG="${{ env.BUILD_TAG }}"
           MACHINE=${{ matrix.machine }}
           IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
           zip -j -9 ${IMGFILE%.img}.zip $IMGFILE
@@ -85,6 +88,6 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pitrezor-${{ matrix.machine }}-${{ github.event.inputs.tag || 'master' }}
-          path: imgs/pitrezor-${{ matrix.machine }}-${{ github.event.inputs.tag || 'master' }}.zip
+          name: pitrezor-${{ matrix.machine }}-${{ env.BUILD_TAG }}
+          path: imgs/pitrezor-${{ matrix.machine }}-${{ env.BUILD_TAG }}.zip
           retention-days: 30
