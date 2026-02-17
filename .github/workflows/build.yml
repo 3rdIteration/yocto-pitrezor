@@ -99,7 +99,7 @@ jobs:
           MACHINE="${{ matrix.machine }}"
           ZIPFILE=imgs/pitrezor-$MACHINE-$TAG.zip
           
-          # Use GitHub Actions artifact upload
+          # Prepare artifact metadata for upload
           echo "artifact_name=pitrezor-$MACHINE-$TAG" >> $GITHUB_OUTPUT
           echo "artifact_path=$ZIPFILE" >> $GITHUB_OUTPUT
         id: prep_artifact
