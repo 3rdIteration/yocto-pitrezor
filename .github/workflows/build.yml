@@ -1,0 +1,90 @@
+name: Build PiTrezor Image
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (default: master)'
+        required: false
+        default: 'master'
+      machine:
+        description: 'Target machine'
+        required: false
+        default: 'raspberrypi0-wifi'
+        type: choice
+        options:
+          - raspberrypi0-wifi
+          - raspberrypi4-64
+          - raspberrypi0-2w-64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', github.event.inputs.machine)) || fromJSON('["raspberrypi0-wifi"]') }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get clean
+          df -h
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        run: docker build -t pitrezor-build .
+      
+      - name: Create imgs directory
+        run: |
+          mkdir -p imgs
+          sudo chown 30000:30000 imgs
+      
+      - name: Build PiTrezor image
+        run: |
+          TAG=${{ github.event.inputs.tag || 'master' }}
+          MACHINE=${{ matrix.machine }}
+          IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
+          
+          docker run -t --rm -v $(pwd)/imgs:/imgs:z pitrezor-build /bin/bash -c "\
+          git clone https://github.com/3rdIteration/yocto-pitrezor.git && \
+          cd yocto-pitrezor && \
+          git checkout $TAG && \
+          git submodule update --init --recursive && \
+          sed -i -e 's/^MACHINE.*/MACHINE ??= \"$MACHINE\"/' build/conf/local.conf && \
+          . poky/oe-init-build-env build && \
+          bitbake pitrezor-image && \
+          cp tmp/deploy/images/$MACHINE/pitrezor-image-$MACHINE.rpi-sdimg /$IMGFILE"
+      
+      - name: Create zip archive
+        run: |
+          TAG=${{ github.event.inputs.tag || 'master' }}
+          MACHINE=${{ matrix.machine }}
+          IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
+          zip -j -9 ${IMGFILE%.img}.zip $IMGFILE
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitrezor-${{ matrix.machine }}-${{ github.event.inputs.tag || 'master' }}
+          path: imgs/pitrezor-${{ matrix.machine }}-${{ github.event.inputs.tag || 'master' }}.zip
+          retention-days: 30
