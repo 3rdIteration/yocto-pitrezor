@@ -65,7 +65,7 @@ jobs:
       - name: Build PiTrezor image
         run: |
           TAG="${{ env.BUILD_TAG }}"
-          MACHINE=${{ matrix.machine }}
+          MACHINE="${{ matrix.machine }}"
           IMGFILE=/imgs/pitrezor-$MACHINE-$TAG.img
           
           docker run -t --rm \
@@ -81,7 +81,7 @@ jobs:
       - name: Create zip archive
         run: |
           TAG="${{ env.BUILD_TAG }}"
-          MACHINE=${{ matrix.machine }}
+          MACHINE="${{ matrix.machine }}"
           IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
           zip -j -9 ${IMGFILE%.img}.zip $IMGFILE
       
