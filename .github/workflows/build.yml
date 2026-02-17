@@ -26,7 +26,7 @@ on:
           - raspberrypi0-2w-64
 
 env:
-  BUILD_TAG: ${{ github.event.inputs.tag || github.ref_name || github.event.repository.default_branch }}
+  BUILD_TAG: ${{ github.event.inputs.tag || github.head_ref || github.ref_name }}
 
 jobs:
   build:
@@ -69,8 +69,8 @@ jobs:
           IMGFILE=/imgs/pitrezor-$MACHINE-$TAG.img
           
           docker run -t --rm \
-            -v $(pwd):/home/build/yocto-pitrezor:z \
-            -v $(pwd)/imgs:/imgs:z \
+            -v ${{ github.workspace }}:/home/build/yocto-pitrezor:z \
+            -v ${{ github.workspace }}/imgs:/imgs:z \
             pitrezor-build /bin/bash -c "\
             cd /home/build/yocto-pitrezor && \
             sed -i -e 's/^MACHINE.*/MACHINE ??= \"$MACHINE\"/' build/conf/local.conf && \
