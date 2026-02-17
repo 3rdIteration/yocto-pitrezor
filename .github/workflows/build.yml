@@ -64,6 +64,10 @@ jobs:
           mkdir -p imgs
           sudo chown 30000:30000 imgs
       
+      - name: Set ownership for Docker user
+        run: |
+          sudo chown -R 30000:30000 ${{ github.workspace }}
+      
       - name: Build PiTrezor image
         run: |
           TAG="${{ env.BUILD_TAG }}"
