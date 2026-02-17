@@ -67,6 +67,8 @@ jobs:
       - name: Build PiTrezor image
         run: |
           TAG="${{ env.BUILD_TAG }}"
+          # Sanitize TAG by replacing slashes with dashes
+          TAG="${TAG//\//-}"
           MACHINE="${{ matrix.machine }}"
           IMGFILE=/imgs/pitrezor-$MACHINE-$TAG.img
           
@@ -83,13 +85,28 @@ jobs:
       - name: Create zip archive
         run: |
           TAG="${{ env.BUILD_TAG }}"
+          # Sanitize TAG by replacing slashes with dashes
+          TAG="${TAG//\//-}"
           MACHINE="${{ matrix.machine }}"
           IMGFILE=imgs/pitrezor-$MACHINE-$TAG.img
           zip -j -9 ${IMGFILE%.img}.zip $IMGFILE
       
       - name: Upload build artifact
+        run: |
+          TAG="${{ env.BUILD_TAG }}"
+          # Sanitize TAG by replacing slashes with dashes
+          TAG="${TAG//\//-}"
+          MACHINE="${{ matrix.machine }}"
+          ZIPFILE=imgs/pitrezor-$MACHINE-$TAG.zip
+          
+          # Use GitHub Actions artifact upload
+          echo "artifact_name=pitrezor-$MACHINE-$TAG" >> $GITHUB_OUTPUT
+          echo "artifact_path=$ZIPFILE" >> $GITHUB_OUTPUT
+        id: prep_artifact
+      
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pitrezor-${{ matrix.machine }}-${{ env.BUILD_TAG }}
-          path: imgs/pitrezor-${{ matrix.machine }}-${{ env.BUILD_TAG }}.zip
+          name: ${{ steps.prep_artifact.outputs.artifact_name }}
+          path: ${{ steps.prep_artifact.outputs.artifact_path }}
           retention-days: 30
