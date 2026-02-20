@@ -7,7 +7,26 @@ Note: This process will download and build a large amount of software, so be sur
 
 ## How to build pitrezor image?
 
-# Build Release from Source via Docker
+## Automated Build via GitHub Actions
+The easiest way to build PiTrezor images is using GitHub Actions, which automatically builds the project in a clean environment.
+
+**Automatic Builds:**
+- Builds are automatically triggered on pushes and pull requests to the `master` or `main` branches
+- By default, builds the `raspberrypi0-wifi` platform
+- Build artifacts (`.zip` files) are available in the Actions tab for 30 days
+
+**Manual Builds:**
+1. Go to the "Actions" tab in the GitHub repository
+2. Select "Build PiTrezor Image" workflow
+3. Click "Run workflow"
+4. Select the target machine:
+   - `raspberrypi0-wifi` (Raspberry Pi Zero W - default)
+   - `raspberrypi4-64` (Raspberry Pi 4 - 64-bit)
+   - `raspberrypi0-2w-64` (Raspberry Pi Zero 2 W - 64-bit)
+5. Optionally specify a tag to build (leave empty to build current branch)
+6. Download the built image from the workflow artifacts when complete
+
+## Build Release from Source via Docker
 This is the most reliable way to build your own copy of the release images via Docker. (This will automatically handle installing all requirements for the build environment)
 
 The steps are:
@@ -18,7 +37,7 @@ The steps are:
 
 This creates file `build/pitrezor-MACHINE-TAG.zip` .
 
-# Build Release from Source natively
+## Build Release from Source natively
 This process requires that you configure your environment to be able to use Bitbake. This allows you to make modifications to the recipe locally, as well as allowing you to modify/rebuild images without the full redownload/compile.
 
 The steps are:
