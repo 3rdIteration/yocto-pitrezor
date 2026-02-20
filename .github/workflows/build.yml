@@ -81,7 +81,10 @@ jobs:
             . poky/oe-init-build-env build && \
             bitbake pitrezor-image && \
             cp tmp/deploy/images/$MACHINE/pitrezor-image-$MACHINE.rpi-sdimg $IMGFILE"
-      
+
+      - name: Restore workspace ownership
+        run: sudo chown -R $(id -u):$(id -g) ${{ github.workspace }}
+
       - name: Create zip archive
         run: |
           TAG="${{ env.BUILD_TAG }}"
